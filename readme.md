@@ -9,7 +9,7 @@
 ## What is it? 
 - A language model trained on [AozoraBunko](https://www.aozora.gr.jp/).
 - Datasource: https://huggingface.co/datasets/globis-university/aozorabunko-clean
-##　なんだこれ？
+## なんだこれ？
 - [青空文庫](https://www.aozora.gr.jp/)をベースにした小規模言語モデルです。
 - この[Qiita記事](https://qiita.com/akeyhero/items/b53eae1c0bc4d54e321f)でデータセットの詳細が書いてあるので、ご参考まで。
 
