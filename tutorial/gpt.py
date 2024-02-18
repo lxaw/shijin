@@ -4,16 +4,22 @@ from torch.nn import functional as F
 
 # hyperparameters
 batch_size = 128 # how many independent sequences will we process in parallel?
-block_size = 256 # what is the maximum context length for predictions?
-max_iters = 5000
+block_size = 256*2 # what is the maximum context length for predictions?
+max_iters = 10000
 eval_interval = 500
 learning_rate = 3e-4
+
+import torch
+import torch.nn as nn
+from torch.nn import functional as F
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 eval_iters = 200
 n_embd = 384
 n_head = 8
 n_layer = 8
-dropout = 0.25
+dropout = 0.20
 # ------------
 
 torch.manual_seed(1337)
@@ -130,17 +136,28 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(n_embd)
 
     def forward(self, x):
+        # Move input tensor to the device of the layer normalization module
+        x = x.to(self.ln1.weight.device)
+
+        # Apply layer normalization and multi-head self-attention
         x = x + self.sa(self.ln1(x))
+
+        # Move intermediate tensor to the device of the next layer normalization module
+        x = x.to(self.ln2.weight.device)
+
+        # Apply layer normalization and feed-forward neural network
         x = x + self.ffwd(self.ln2(x))
+
         return x
+
 
 class GPTLanguageModel(nn.Module):
 
     def __init__(self):
         super().__init__()
         # each token directly reads off the logits for the next token from a lookup table
-        self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
-        self.position_embedding_table = nn.Embedding(block_size, n_embd)
+        self.token_embedding_table = nn.Embedding(vocab_size, n_embd).to(device)
+        self.position_embedding_table = nn.Embedding(block_size, n_embd).to(device)
         self.blocks = nn.Sequential(*[Block(n_embd, n_head=n_head) for _ in range(n_layer)])
         self.ln_f = nn.LayerNorm(n_embd) # final layer norm
         self.lm_head = nn.Linear(n_embd, vocab_size)
@@ -159,23 +176,26 @@ class GPTLanguageModel(nn.Module):
     def forward(self, idx, targets=None):
         B, T = idx.shape
 
-        # idx and targets are both (B,T) tensor of integers
-        tok_emb = self.token_embedding_table(idx) # (B,T,C)
-        pos_emb = self.position_embedding_table(torch.arange(T, device=device)) # (T,C)
-        x = tok_emb + pos_emb # (B,T,C)
-        x = self.blocks(x) # (B,T,C)
-        x = self.ln_f(x) # (B,T,C)
-        logits = self.lm_head(x) # (B,T,vocab_size)
+        # idx is already on the correct device (GPU), as it's passed as an argument
 
-        if targets is None:
-            loss = None
+        # Compute logits
+        tok_emb = self.token_embedding_table(idx)
+        pos_emb = self.position_embedding_table(torch.arange(T, device=idx.device))
+        x = tok_emb + pos_emb
+        x = self.blocks(x)
+        x = self.ln_f(x)
+        logits = self.lm_head(x)
+
+        if targets is not None:
+            # Move targets tensor to the same device as logits
+            targets = targets.to(logits.device)
+            # Compute cross-entropy loss
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
         else:
-            B, T, C = logits.shape
-            logits = logits.view(B*T, C)
-            targets = targets.view(B*T)
-            loss = F.cross_entropy(logits, targets)
+            loss = None
 
         return logits, loss
+
 
     def generate(self, idx, max_new_tokens):
         # idx is (B, T) array of indices in the current context
@@ -195,7 +215,14 @@ class GPTLanguageModel(nn.Module):
         return idx
 
 model = GPTLanguageModel()
-m = model.to(device)
+
+if device == 'cuda' and torch.cuda.device_count() > 1:
+    m = nn.DataParallel(model)
+    parallel = True
+else:
+    m = model.to(device)
+    parallel = False
+
 # print the number of parameters in the model
 print(sum(p.numel() for p in m.parameters())/1e6, 'M parameters')
 
@@ -224,4 +251,7 @@ for iter in range(max_iters):
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
 open('more.txt', 'w').write(decode(m.generate(context, max_new_tokens=10000)[0].tolist()))
 
-torch.save(model.state_dict(),'shijin.pt')
+if parallel:
+    torch.save(model.module.state_dict(), 'shijin.pt')
+else:
+    torch.save(model.state_dict(),'shijin.pt')
