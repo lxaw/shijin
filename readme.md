@@ -1,10 +1,10 @@
 # shijin 詩人
-#　詩人のための小規模言語モデル
+# 詩人のための小規模言語モデル
 
 ![irasutoya poet](https://github.com/lxaw/shijin/blob/main/git_assets/music_ginyuu_shijin.png)
 
 ## A small language model for writing nice Japanese.
-###　Issueを英語で書く必要はありません。
+### Issueを英語で書く必要はありません。
 
 ## What is it? 
 - A language model trained on [AozoraBunko](https://www.aozora.gr.jp/).
