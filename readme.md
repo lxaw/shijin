@@ -31,7 +31,7 @@
 - Languages, even though they may look and sound different, all share some inner structure.
 - As such, perhaps we can get good results from transfer learning?
 ## まだやっていないこと：
-- ちっぽけな大学生の私には、数多くの高性能なGPUは周りに転がっていません。
+- 一文なしの大学生の私には、数多くの高性能なGPUは周りに転がっていません。
 - そのため、英語のLLMからの転移学習を使用できるかどうかを見てみましょう！
 - 言語は見た目や音が異なるかもしれませんが、ある程度の内部構造を共有しているはずです。
 - なので、転移学習から良い結果を得ることができるかもしれません。
