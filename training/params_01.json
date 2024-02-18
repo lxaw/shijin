@@ -1,0 +1,14 @@
+{
+  "model_path": "../pytorch_models/gpt_model_v1.py",
+  "model_name": "GPT",
+  "batch_size":128,
+  "block_size":400,
+  "max_iters":10000,
+  "eval_interval":500,
+  "learning_rate":3e-4,
+  "n_embd":400,
+  "n_heads":6,
+  "n_layer":6,
+  "dropout":0.2,
+  "train_file":"../data/data.txt"
+}
